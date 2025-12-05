@@ -1,0 +1,35 @@
+-- Ativar o Event Scheduler (necessário para agendamento automático)
+SET GLOBAL event_scheduler = ON;
+
+DELIMITER $$
+
+-- Procedure para gerar relatório diário de compras
+CREATE PROCEDURE relatorio_diario_compras()
+BEGIN
+  SELECT 
+    data_compra,
+    id_produto,
+    SUM(quantidade) AS total_comprado
+  FROM 
+    compras
+  WHERE 
+    data_compra = CURDATE()
+  GROUP BY 
+    data_compra, id_produto;
+END $$
+
+DELIMITER ;
+
+-- Event para executar a procedure automaticamente todos os dias às 23h59
+CREATE EVENT IF NOT EXISTS gerar_relatorio_diario
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+  CALL relatorio_diario_compras();
+
+CREATE TABLE compras (
+  id_compra INT AUTO_INCREMENT PRIMARY KEY,
+  id_produto INT NOT NULL,
+  quantidade INT NOT NULL,
+  data_compra DATE NOT NULL
+);
